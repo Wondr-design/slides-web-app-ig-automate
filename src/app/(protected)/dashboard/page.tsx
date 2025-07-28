@@ -3,9 +3,9 @@ import React from "react";
 type Props = {};
 
 const Page = async (props: Props) => {
-  //Server action to onBoard the user.
+  //WIP: Server action to onBoard the user.
 
-  //If user, set status to 200|201, then push to dashboard page
+  //WIP: If user, set status to 200|201, then push to dashboard page
 
   //else, redirect to sign in page
   return <div>Page</div>;

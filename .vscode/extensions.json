@@ -1,0 +1,54 @@
+{
+  "recommendations": [
+    // 🧠 Code Quality & Formatting
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "wayou.vscode-todo-highlight",
+    "aaron-bond.better-comments",
+
+    // 🔧 Dev Productivity
+    "christian-kohler.path-intellisense",
+    "eg2.vscode-npm-script",
+    "wix.vscode-import-cost",
+    "gruntfuggly.todo-tree",
+    "alefragnani.project-manager",
+    "formulahendry.auto-rename-tag",
+
+    // ⚛️ React, Next.js, TypeScript
+    "dsznajder.es7-react-js-snippets",
+    "johnpapa.vscode-peacock",
+    "ms-vscode.vscode-typescript-next",
+    "visualstudioexptteam.vscodeintellicode",
+
+    // 🎨 Tailwind, CSS, HTML
+    "bradlc.vscode-tailwindcss",
+    "tailwindlabs.tailwindcss-intellisense",
+    "heybourn.headwind",
+    "ecmel.vscode-html-css",
+    "pranaygp.vscode-css-peek",
+    "vunguyentuan.vscode-html-to-jsx",
+
+    // 🌐 API + Backend
+    "humao.rest-client",
+    "rangav.vscode-thunder-client",
+    "mikestead.dotenv",
+    "ms-azuretools.vscode-docker",
+
+    // ⚡ Deployment & Hosting
+    "vercel.vercel",
+    "firebase.firebase-vscode",
+    "supabase.supabase-vscode",
+
+    // 💬 AI tools
+    "GitHub.copilot",
+    "GitHub.copilot-chat",
+    "danielsan.medium-style-code-snap",
+    "continue.continue", // local ChatGPT-like tool
+
+    // 📐 Markdown, Docs & SVG
+    "yzane.markdown-pdf",
+    "bierner.markdown-mermaid",
+    "jock.svg",
+    "yzhang.markdown-all-in-one"
+  ]
+}

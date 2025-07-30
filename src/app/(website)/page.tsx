@@ -1,9 +1,9 @@
-import Features from "../../components/layouts/Features";
-import Footer from "../../components/layouts/Footer";
-import Header from "../../components/layouts/Header";
-import Hero from "../../components/layouts/Hero";
-import Marquee from "../../components/layouts/Marquee";
-import Pricing from "../../components/layouts/Pricing";
+import Features from "@/components/layouts/Features";
+import Footer from "@/components/layouts/Footer";
+import Header from "@/components/layouts/Header";
+import Hero from "@/components/layouts/Hero";
+import Marquee from "@/components/layouts/Marquee";
+import Pricing from "@/components/layouts/Pricing";
 
 export default function Home() {
   return (

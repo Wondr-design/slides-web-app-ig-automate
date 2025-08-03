@@ -6,8 +6,6 @@ type Props = {};
 const PaymentButton = (props: Props) => {
   return (
     <Button
-      // disabled={isProcessing}
-      // onClick={onSubscribe}
       className="bg-gradient-to-br
      text-white 
      rounded-full 

@@ -8,7 +8,7 @@ const Page = async (props: Props) => {
   //WIP: If user, set status to 200|201, then push to dashboard page
 
   //else, redirect to sign in page
-  return <div>Page</div>;
+  return <div>Pageer</div>;
 };
 
 export default Page;

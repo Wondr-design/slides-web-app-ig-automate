@@ -2,12 +2,13 @@
 import { usePaths } from "@/hooks/use-nav";
 import { LogoSmall } from "@/svgs/logo-small";
 import React from "react";
-import Items from "@/components/global/sidebar/items";
-import { Separator } from "@/components/ui/separator";
-import ClerkAuthState from "@/components/global/clerk-auth-state";
+import Items from "./items";
+
 import { HelpDuoToneWhite } from "@/icons";
-import { SubscriptionPlan } from "@/components/global/subscription-plan";
+import { SubscriptionPlan } from "../subscription-plan";
+import ClerkAuthState from "../clerk-auth-state";
 import UpgradeCard from "./upgrade";
+import { Separator } from "@/components/ui/separator";
 
 type Props = {
   slug: string;
@@ -27,7 +28,7 @@ const Sidebar = ({ slug }: Props) => {
     bg-gradient-to-b from-[#768BDD] 
     via-[#171717]
      to-[#768BDD] 
-     hidden 
+     hiddenn
      bottom-0 
      top-0 
      m-3 

@@ -1,3 +1,4 @@
+import InfoBar from "@/components/global/infobar";
 import Sidebar from "@/components/global/sidebar";
 import React from "react";
 
@@ -11,9 +12,20 @@ const Layout = ({ children, params }: Props) => {
   // WIP: Query clients and Fetch user data based on slug
   return (
     <div className="p-3">
-      {/* Sidebar */}
       <Sidebar slug={params.slug} />
-      {/* Navigation */}
+      <div
+        className="
+      lg:ml-[250px] 
+      lg:pl-10 
+      lg:py-5 
+      flex 
+      flex-col 
+      overflow-auto
+      "
+      >
+        <InfoBar slug={params.slug} />
+        {children}
+      </div>
     </div>
   );
 };

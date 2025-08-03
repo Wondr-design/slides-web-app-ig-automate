@@ -1,7 +1,6 @@
 "use client";
 
 import { PAGE_BREAD_CRUMBS } from "@/constants/pages";
-import { usePaths } from "@/hooks/user-nav";
 import { Menu } from "lucide-react";
 import React from "react";
 import Items from "../sidebar/items";
@@ -11,11 +10,12 @@ import { HelpDuoToneWhite } from "@/icons";
 import { SubscriptionPlan } from "../subscription-plan";
 import UpgradeCard from "../sidebar/upgrade";
 import { LogoSmall } from "@/svgs/logo-small";
-import CreateAutomation from "../create-automation";
 import MainBreadCrumb from "../bread-crumbs/main-bread-crumb";
 import Search from "./search";
 import { Notifications } from "./notifications";
 import Sheet from "../sheet";
+import { usePaths } from "@/hooks/use-nav";
+import CreateAutomation from "../create-automation";
 
 type Props = {
   slug: string;

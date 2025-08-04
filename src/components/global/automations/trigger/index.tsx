@@ -5,7 +5,7 @@ import ActiveTrigger from "./active";
 import { Separator } from "@/components/ui/separator";
 import ThenAction from "../then/then-action";
 import TriggerButton from "../trigger-button";
-import { AUTOMATION_TRIGGERS } from "@/constants/automation";
+import { AUTOMATION_TRIGGERS } from "@/constants/automations";
 import { useTriggers } from "@/hooks/use-automations";
 import { cn } from "@/lib/utils";
 import Keywords from "./keywords";

@@ -1,5 +1,5 @@
 "use client";
-import { usePaths } from "@/hooks/use-nav";
+import { usePaths } from "@/hooks/user-nav";
 import { LogoSmall } from "@/svgs/logo-small";
 import React from "react";
 import Items from "./items";

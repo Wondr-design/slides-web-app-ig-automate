@@ -14,7 +14,7 @@ import MainBreadCrumb from "../bread-crumbs/main-bread-crumb";
 import Search from "./search";
 import { Notifications } from "./notifications";
 import Sheet from "../sheet";
-import { usePaths } from "@/hooks/use-nav";
+import { usePaths } from "@/hooks/user-nav";
 import CreateAutomation from "../create-automation";
 
 type Props = {

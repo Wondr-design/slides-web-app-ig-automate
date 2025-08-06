@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { z, ZodSchema } from "zod";
 
 const useZodForm = (
-  schema: ZodSchema,
+  schema: z.ZodType<any, any, any>,
   mutation: UseMutateFunction,
   defaultValues?: any
 ) => {

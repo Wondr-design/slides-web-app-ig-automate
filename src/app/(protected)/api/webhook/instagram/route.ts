@@ -65,24 +65,21 @@ export async function POST(req: NextRequest) {
             const token = automation.User?.integrations[0].token!;
             const automationId = automation.id;
 
-            setTimeout(async () => {
-              // Delay sending the message by 60 seconds
-              await new Promise((resolve) => setTimeout(resolve, 60000));
-              const direct_message = await sendDM(
-                entryId,
-                senderId,
-                prompt,
-                token
-              );
+            // Delay sending the message by 60 seconds
+            await new Promise((resolve) => setTimeout(resolve, 60000));
+            const direct_message = await sendDM(
+              entryId,
+              senderId,
+              prompt,
+              token
+            );
 
-              if (direct_message.status === 200) {
-                await trackResponses(automationId, "DM");
-              }
-            }, 0);
-
+            if (direct_message.status === 200) {
+              await trackResponses(automationId, "DM");
+            }
             return NextResponse.json(
               {
-                message: "Message scheduled",
+                message: "Message sent",
               },
               { status: 200 }
             );
@@ -112,41 +109,38 @@ export async function POST(req: NextRequest) {
               const userMessage =
                 webhook_payload.entry[0].messaging[0].message.text;
 
-              setTimeout(async () => {
-                // Delay sending the message by 60 seconds
-                await new Promise((resolve) => setTimeout(resolve, 60000));
+              // Delay sending the message by 60 seconds
+              await new Promise((resolve) => setTimeout(resolve, 60000));
 
-                const reciever = createChatHistory(
-                  automationId,
-                  entryId,
-                  senderId,
-                  userMessage
-                );
+              const reciever = createChatHistory(
+                automationId,
+                entryId,
+                senderId,
+                userMessage
+              );
 
-                const sender = createChatHistory(
-                  automationId,
-                  entryId,
-                  senderId,
-                  content
-                );
+              const sender = createChatHistory(
+                automationId,
+                entryId,
+                senderId,
+                content
+              );
 
-                await client.$transaction([reciever, sender]);
+              await client.$transaction([reciever, sender]);
 
-                const direct_message = await sendDM(
-                  entryId,
-                  senderId,
-                  content,
-                  token
-                );
+              const direct_message = await sendDM(
+                entryId,
+                senderId,
+                content,
+                token
+              );
 
-                if (direct_message.status === 200) {
-                  await trackResponses(automationId, "DM");
-                }
-              }, 0);
-
+              if (direct_message.status === 200) {
+                await trackResponses(automationId, "DM");
+              }
               return NextResponse.json(
                 {
-                  message: "Message scheduled",
+                  message: "Message sent",
                 },
                 { status: 200 }
               );
@@ -196,24 +190,21 @@ export async function POST(req: NextRequest) {
               const token = automation.User?.integrations[0].token!;
               const automationId = automation.id;
 
-              setTimeout(async () => {
-                // Delay sending the message by 60 seconds
-                await new Promise((resolve) => setTimeout(resolve, 60000));
-                const direct_message = await sendPrivateMessage(
-                  entryId,
-                  commentId,
-                  prompt,
-                  token
-                );
+              // Delay sending the message by 60 seconds
+              await new Promise((resolve) => setTimeout(resolve, 60000));
+              const direct_message = await sendPrivateMessage(
+                entryId,
+                commentId,
+                prompt,
+                token
+              );
 
-                if (direct_message.status === 200) {
-                  await trackResponses(automationId, "COMMENT");
-                }
-              }, 0);
-
+              if (direct_message.status === 200) {
+                await trackResponses(automationId, "COMMENT");
+              }
               return NextResponse.json(
                 {
-                  message: "Message scheduled",
+                  message: "Message sent",
                 },
                 { status: 200 }
               );
@@ -241,41 +232,38 @@ export async function POST(req: NextRequest) {
                   webhook_payload.entry[0].changes[0].value.from.id;
                 const userText = webhook_payload.entry[0].changes[0].value.text;
 
-                setTimeout(async () => {
-                  // Delay sending the message by 60 seconds
-                  await new Promise((resolve) => setTimeout(resolve, 60000));
+                // Delay sending the message by 60 seconds
+                await new Promise((resolve) => setTimeout(resolve, 60000));
 
-                  const reciever = createChatHistory(
-                    automationId,
-                    entryId,
-                    fromId,
-                    userText
-                  );
+                const reciever = createChatHistory(
+                  automationId,
+                  entryId,
+                  fromId,
+                  userText
+                );
 
-                  const sender = createChatHistory(
-                    automationId,
-                    entryId,
-                    fromId,
-                    content
-                  );
+                const sender = createChatHistory(
+                  automationId,
+                  entryId,
+                  fromId,
+                  content
+                );
 
-                  await client.$transaction([reciever, sender]);
+                await client.$transaction([reciever, sender]);
 
-                  const direct_message = await sendPrivateMessage(
-                    entryId,
-                    commentId,
-                    content,
-                    token
-                  );
+                const direct_message = await sendPrivateMessage(
+                  entryId,
+                  commentId,
+                  content,
+                  token
+                );
 
-                  if (direct_message.status === 200) {
-                    await trackResponses(automationId, "COMMENT");
-                  }
-                }, 0);
-
+                if (direct_message.status === 200) {
+                  await trackResponses(automationId, "COMMENT");
+                }
                 return NextResponse.json(
                   {
-                    message: "Message scheduled",
+                    message: "Message sent",
                   },
                   { status: 200 }
                 );
@@ -323,40 +311,37 @@ export async function POST(req: NextRequest) {
             const userMessage =
               webhook_payload.entry[0].messaging[0].message.text;
 
-            setTimeout(async () => {
-              // Delay sending the message by 60 seconds
-              await new Promise((resolve) => setTimeout(resolve, 60000));
+            // Delay sending the message by 60 seconds
+            await new Promise((resolve) => setTimeout(resolve, 60000));
 
-              const reciever = createChatHistory(
-                automationId,
-                entryId,
-                senderId,
-                userMessage
-              );
+            const reciever = createChatHistory(
+              automationId,
+              entryId,
+              senderId,
+              userMessage
+            );
 
-              const sender = createChatHistory(
-                automationId,
-                entryId,
-                senderId,
-                content
-              );
-              await client.$transaction([reciever, sender]);
-              const direct_message = await sendDM(
-                entryId,
-                senderId,
-                content,
-                token
-              );
+            const sender = createChatHistory(
+              automationId,
+              entryId,
+              senderId,
+              content
+            );
+            await client.$transaction([reciever, sender]);
+            const direct_message = await sendDM(
+              entryId,
+              senderId,
+              content,
+              token
+            );
 
-              if (direct_message.status === 200) {
-                // tracked inside delayed block if needed
-                await trackResponses(automationId, "DM");
-              }
-            }, 0);
-
+            if (direct_message.status === 200) {
+              // tracked inside delayed block if needed
+              await trackResponses(automationId, "DM");
+            }
             return NextResponse.json(
               {
-                message: "Message scheduled",
+                message: "Message sent",
               },
               { status: 200 }
             );

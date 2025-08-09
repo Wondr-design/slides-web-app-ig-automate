@@ -12,10 +12,21 @@ import { openai } from "@/lib/openai";
 import { client } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
+// NEEDED BY IG TO VERIFY THE WEBHOOK
+// https://developers.facebook.com/docs/instagram-webhooks/getting-started#verify-your-webhook
+// This is the GET request that Instagram will call to verify the webhook
+// It should return the challenge parameter sent by Instagram
+
 export async function GET(req: NextRequest) {
   const hub = req.nextUrl.searchParams.get("hub.challenge");
   return new NextResponse(hub);
 }
+// The POST request will handle the actual webhook events
+// https://developers.facebook.com/docs/instagram-webhooks/getting-started#receive-webhook
+// The POST request will handle the actual webhook events
+// It should return a 200 OK response to acknowledge the event
+// If you return a 400 or 500 error, Instagram will retry the request
+// If you return a 400 or 500 error, Instagram will retry the request
 
 export async function POST(req: NextRequest) {
   const webhook_payload = await req.json();

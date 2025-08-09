@@ -33,15 +33,22 @@ export async function POST(req: NextRequest) {
   let matcher;
   try {
     if (webhook_payload.entry[0].messaging) {
-      matcher = await matchKeyword(
-        webhook_payload.entry[0].messaging[0].message.text
-      );
+      const messagingEvent = webhook_payload.entry[0].messaging[0];
+      if (
+        !messagingEvent.message ||
+        typeof messagingEvent.message.text !== "string"
+      ) {
+        return NextResponse.json({ message: "No user text" }, { status: 200 });
+      }
+      matcher = await matchKeyword(messagingEvent.message.text);
     }
 
     if (webhook_payload.entry[0].changes) {
-      matcher = await matchKeyword(
-        webhook_payload.entry[0].changes[0].value.text
-      );
+      const changeValue = webhook_payload.entry[0].changes[0].value;
+      if (!changeValue.text || typeof changeValue.text !== "string") {
+        return NextResponse.json({ message: "No user text" }, { status: 200 });
+      }
+      matcher = await matchKeyword(changeValue.text);
     }
 
     if (matcher && matcher.automationId) {

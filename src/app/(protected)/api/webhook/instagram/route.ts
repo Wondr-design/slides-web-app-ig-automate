@@ -12,6 +12,9 @@ import { openai } from "@/lib/openai";
 import { client } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
+// In-memory cache for processed message IDs to prevent duplicates
+const processedMessageIds = new Set<string>();
+
 // NEEDED BY IG TO VERIFY THE WEBHOOK
 // https://developers.facebook.com/docs/instagram-webhooks/getting-started#verify-your-webhook
 // This is the GET request that Instagram will call to verify the webhook
@@ -32,21 +35,64 @@ export async function POST(req: NextRequest) {
   const webhook_payload = await req.json();
   let matcher;
   try {
+    // Handle messaging events
     if (webhook_payload.entry[0].messaging) {
       const messagingEvent = webhook_payload.entry[0].messaging[0];
+      // Check for no user text
       if (
         !messagingEvent.message ||
         typeof messagingEvent.message.text !== "string"
       ) {
         return NextResponse.json({ message: "No user text" }, { status: 200 });
       }
+      // Ignore if sender is the same as the page/business itself
+      if (messagingEvent.sender?.id === webhook_payload.entry[0].id) {
+        return NextResponse.json(
+          { message: "Own message ignored" },
+          { status: 200 }
+        );
+      }
+      // Duplicate message check
+      const messageId = messagingEvent.message?.mid;
+      if (typeof messageId === "string") {
+        if (processedMessageIds.has(messageId)) {
+          return NextResponse.json(
+            { message: "Duplicate ignored" },
+            { status: 200 }
+          );
+        }
+        processedMessageIds.add(messageId);
+      }
       matcher = await matchKeyword(messagingEvent.message.text);
     }
 
+    // Handle changes events
     if (webhook_payload.entry[0].changes) {
       const changeValue = webhook_payload.entry[0].changes[0].value;
+      // Check for no user text
       if (!changeValue.text || typeof changeValue.text !== "string") {
         return NextResponse.json({ message: "No user text" }, { status: 200 });
+      }
+      // Ignore if comment is from the page/business itself
+      if (
+        changeValue.from?.id &&
+        changeValue.from.id === webhook_payload.entry[0].id
+      ) {
+        return NextResponse.json(
+          { message: "Own message ignored" },
+          { status: 200 }
+        );
+      }
+      // Duplicate comment/message check
+      const messageId = changeValue.id;
+      if (typeof messageId === "string") {
+        if (processedMessageIds.has(messageId)) {
+          return NextResponse.json(
+            { message: "Duplicate ignored" },
+            { status: 200 }
+          );
+        }
+        processedMessageIds.add(messageId);
       }
       matcher = await matchKeyword(changeValue.text);
     }

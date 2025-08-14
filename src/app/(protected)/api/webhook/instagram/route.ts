@@ -143,24 +143,26 @@ export async function POST(req: NextRequest) {
             automation.listener.listener === "SMARTAI" &&
             automation.User?.subscription?.plan === "PRO"
           ) {
+            const userMessage =
+              webhook_payload.entry[0]?.messaging?.[0]?.message?.text ?? "";
+            const prompt = automation.listener?.prompt ?? "";
             const smart_ai_message = await openai.chat.completions.create({
               model: "gpt-4o",
               messages: [
                 {
-                  role: "assistant",
-                  content: `${automation.listener?.prompt}: Keep responses under 2 sentences`,
+                  role: "system",
+                  content: `${prompt}. Keep responses under 2 sentences.`,
                 },
+                { role: "user", content: userMessage },
               ],
             });
 
-            if (smart_ai_message.choices[0].message.content) {
+            const content = smart_ai_message.choices?.[0]?.message?.content;
+            if (content) {
               const entryId = webhook_payload.entry[0].id;
               const senderId = webhook_payload.entry[0].messaging[0].sender.id;
               const automationId = automation.id;
               const token = automation.User?.integrations[0].token!;
-              const content = smart_ai_message.choices[0].message.content;
-              const userMessage =
-                webhook_payload.entry[0].messaging[0].message.text;
 
               // Delay sending the message by 60 seconds
               await new Promise((resolve) => setTimeout(resolve, 60000));
@@ -266,24 +268,27 @@ export async function POST(req: NextRequest) {
               automation.listener.listener === "SMARTAI" &&
               automation.User?.subscription?.plan === "PRO"
             ) {
+              const userText =
+                webhook_payload.entry[0]?.changes?.[0]?.value?.text ?? "";
+              const prompt = automation.listener?.prompt ?? "";
               const smart_ai_message = await openai.chat.completions.create({
                 model: "gpt-4o",
                 messages: [
                   {
-                    role: "assistant",
-                    content: `${automation.listener?.prompt}: keep responses under 2 sentences`,
+                    role: "system",
+                    content: `${prompt}. Keep responses under 2 sentences.`,
                   },
+                  { role: "user", content: userText },
                 ],
               });
-              if (smart_ai_message.choices[0].message.content) {
+              const content = smart_ai_message.choices?.[0]?.message?.content;
+              if (content) {
                 const entryId = webhook_payload.entry[0].id;
                 const commentId = webhook_payload.entry[0].changes[0].value.id;
                 const automationId = automation.id;
                 const token = automation.User?.integrations[0].token!;
-                const content = smart_ai_message.choices[0].message.content;
                 const fromId =
                   webhook_payload.entry[0].changes[0].value.from.id;
-                const userText = webhook_payload.entry[0].changes[0].value.text;
 
                 // Delay sending the message by 60 seconds
                 await new Promise((resolve) => setTimeout(resolve, 60000));
@@ -344,8 +349,8 @@ export async function POST(req: NextRequest) {
             model: "gpt-4o",
             messages: [
               {
-                role: "assistant",
-                content: `${automation.listener?.prompt}: keep responses under 2 sentences`,
+                role: "system",
+                content: `${automation.listener?.prompt}. Keep responses under 2 sentences.`,
               },
               ...customer_history.history,
               {
@@ -355,12 +360,12 @@ export async function POST(req: NextRequest) {
             ],
           });
 
-          if (smart_ai_message.choices[0].message.content) {
+          const content = smart_ai_message.choices?.[0]?.message?.content;
+          if (content) {
             const entryId = webhook_payload.entry[0].id;
             const senderId = webhook_payload.entry[0].messaging[0].sender.id;
             const automationId = automation.id;
             const token = automation.User?.integrations[0].token!;
-            const content = smart_ai_message.choices[0].message.content;
             const userMessage =
               webhook_payload.entry[0].messaging[0].message.text;
 
@@ -416,11 +421,7 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    return NextResponse.json(
-      {
-        message: "No automation set",
-      },
-      { status: 200 }
-    );
+    console.error("IG webhook error:", error);
+    return NextResponse.json({ message: "Internal error" }, { status: 500 });
   }
 }

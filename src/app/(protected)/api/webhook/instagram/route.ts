@@ -12,8 +12,13 @@ import { openai } from "@/lib/openai";
 import { client } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
-// In-memory cache for processed message IDs to prevent duplicates
+/**
+ * In-memory cache for processed message IDs to prevent duplicates.
+ * WARNING: This is not suitable for a production environment with multiple server
+ * instances, as the cache is not shared. Use a persistent store like Redis instead.
+ */
 const processedMessageIds = new Set<string>();
+const RESPONSE_DELAY_MS = 60000; // 60 seconds
 
 // NEEDED BY IG TO VERIFY THE WEBHOOK
 // https://developers.facebook.com/docs/instagram-webhooks/getting-started#verify-your-webhook

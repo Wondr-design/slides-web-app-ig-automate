@@ -12,94 +12,25 @@ import { openai } from "@/lib/openai";
 import { client } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
-/**
- * In-memory cache for processed message IDs to prevent duplicates.
- * WARNING: This is not suitable for a production environment with multiple server
- * instances, as the cache is not shared. Use a persistent store like Redis instead.
- */
-const processedMessageIds = new Set<string>();
-const RESPONSE_DELAY_MS = 60000; // 60 seconds
-
-// NEEDED BY IG TO VERIFY THE WEBHOOK
-// https://developers.facebook.com/docs/instagram-webhooks/getting-started#verify-your-webhook
-// This is the GET request that Instagram will call to verify the webhook
-// It should return the challenge parameter sent by Instagram
-
 export async function GET(req: NextRequest) {
   const hub = req.nextUrl.searchParams.get("hub.challenge");
   return new NextResponse(hub);
 }
-// The POST request will handle the actual webhook events
-// https://developers.facebook.com/docs/instagram-webhooks/getting-started#receive-webhook
-// The POST request will handle the actual webhook events
-// It should return a 200 OK response to acknowledge the event
-// If you return a 400 or 500 error, Instagram will retry the request
-// If you return a 400 or 500 error, Instagram will retry the request
 
 export async function POST(req: NextRequest) {
   const webhook_payload = await req.json();
   let matcher;
   try {
-    // Handle messaging events
     if (webhook_payload.entry[0].messaging) {
-      const messagingEvent = webhook_payload.entry[0].messaging[0];
-      // Check for no user text
-      if (
-        !messagingEvent.message ||
-        typeof messagingEvent.message.text !== "string"
-      ) {
-        return NextResponse.json({ message: "No user text" }, { status: 200 });
-      }
-      // Ignore if sender is the same as the page/business itself
-      if (messagingEvent.sender?.id === webhook_payload.entry[0].id) {
-        return NextResponse.json(
-          { message: "Own message ignored" },
-          { status: 200 }
-        );
-      }
-      // Duplicate message check
-      const messageId = messagingEvent.message?.mid;
-      if (typeof messageId === "string") {
-        if (processedMessageIds.has(messageId)) {
-          return NextResponse.json(
-            { message: "Duplicate ignored" },
-            { status: 200 }
-          );
-        }
-        processedMessageIds.add(messageId);
-      }
-      matcher = await matchKeyword(messagingEvent.message.text);
+      matcher = await matchKeyword(
+        webhook_payload.entry[0].messaging[0].message.text
+      );
     }
 
-    // Handle changes events
     if (webhook_payload.entry[0].changes) {
-      const changeValue = webhook_payload.entry[0].changes[0].value;
-      // Check for no user text
-      if (!changeValue.text || typeof changeValue.text !== "string") {
-        return NextResponse.json({ message: "No user text" }, { status: 200 });
-      }
-      // Ignore if comment is from the page/business itself
-      if (
-        changeValue.from?.id &&
-        changeValue.from.id === webhook_payload.entry[0].id
-      ) {
-        return NextResponse.json(
-          { message: "Own message ignored" },
-          { status: 200 }
-        );
-      }
-      // Duplicate comment/message check
-      const messageId = changeValue.id;
-      if (typeof messageId === "string") {
-        if (processedMessageIds.has(messageId)) {
-          return NextResponse.json(
-            { message: "Duplicate ignored" },
-            { status: 200 }
-          );
-        }
-        processedMessageIds.add(messageId);
-      }
-      matcher = await matchKeyword(changeValue.text);
+      matcher = await matchKeyword(
+        webhook_payload.entry[0].changes[0].value.text
+      );
     }
 
     if (matcher && matcher.automationId) {
@@ -117,30 +48,24 @@ export async function POST(req: NextRequest) {
             automation.listener &&
             automation.listener.listener === "MESSAGE"
           ) {
-            const entryId = webhook_payload.entry[0].id;
-            const senderId = webhook_payload.entry[0].messaging[0].sender.id;
-            const prompt = automation.listener?.prompt;
-            const token = automation.User?.integrations[0].token!;
-            const automationId = automation.id;
-
-            // Delay sending the message by 60 seconds
-            await new Promise((resolve) => setTimeout(resolve, 60000));
             const direct_message = await sendDM(
-              entryId,
-              senderId,
-              prompt,
-              token
+              webhook_payload.entry[0].id,
+              webhook_payload.entry[0].messaging[0].sender.id,
+              automation.listener?.prompt,
+              automation.User?.integrations[0].token!
             );
 
             if (direct_message.status === 200) {
-              await trackResponses(automationId, "DM");
+              const tracked = await trackResponses(automation.id, "DM");
+              if (tracked) {
+                return NextResponse.json(
+                  {
+                    message: "Message sent",
+                  },
+                  { status: 200 }
+                );
+              }
             }
-            return NextResponse.json(
-              {
-                message: "Message sent",
-              },
-              { status: 200 }
-            );
           }
 
           if (
@@ -148,62 +73,51 @@ export async function POST(req: NextRequest) {
             automation.listener.listener === "SMARTAI" &&
             automation.User?.subscription?.plan === "PRO"
           ) {
-            const userMessage =
-              webhook_payload.entry[0]?.messaging?.[0]?.message?.text ?? "";
-            const prompt = automation.listener?.prompt ?? "";
             const smart_ai_message = await openai.chat.completions.create({
               model: "gpt-4o",
               messages: [
                 {
-                  role: "system",
-                  content: `${prompt}. Keep responses under 2 sentences.`,
+                  role: "assistant",
+                  content: `${automation.listener?.prompt}: Keep responses under 2 sentences`,
                 },
-                { role: "user", content: userMessage },
               ],
             });
 
-            const content = smart_ai_message.choices?.[0]?.message?.content;
-            if (content) {
-              const entryId = webhook_payload.entry[0].id;
-              const senderId = webhook_payload.entry[0].messaging[0].sender.id;
-              const automationId = automation.id;
-              const token = automation.User?.integrations[0].token!;
-
-              // Delay sending the message by 60 seconds
-              await new Promise((resolve) => setTimeout(resolve, 60000));
-
+            if (smart_ai_message.choices[0].message.content) {
               const reciever = createChatHistory(
-                automationId,
-                entryId,
-                senderId,
-                userMessage
+                automation.id,
+                webhook_payload.entry[0].id,
+                webhook_payload.entry[0].messaging[0].sender.id,
+                webhook_payload.entry[0].messaging[0].message.text
               );
 
               const sender = createChatHistory(
-                automationId,
-                entryId,
-                senderId,
-                content
+                automation.id,
+                webhook_payload.entry[0].id,
+                webhook_payload.entry[0].messaging[0].sender.id,
+                smart_ai_message.choices[0].message.content
               );
 
               await client.$transaction([reciever, sender]);
 
               const direct_message = await sendDM(
-                entryId,
-                senderId,
-                content,
-                token
+                webhook_payload.entry[0].id,
+                webhook_payload.entry[0].messaging[0].sender.id,
+                smart_ai_message.choices[0].message.content,
+                automation.User?.integrations[0].token!
               );
 
               if (direct_message.status === 200) {
-                await trackResponses(automationId, "DM");
+                const tracked = await trackResponses(automation.id, "DM");
+                if (tracked) {
+                  return NextResponse.json(
+                    {
+                      message: "Message sent",
+                    },
+                    { status: 200 }
+                  );
+                }
               }
-              return NextResponse.json(
-                {
-                  message: "Message sent",
-                },
-                { status: 200 }
-              );
             }
           }
         }
@@ -244,92 +158,79 @@ export async function POST(req: NextRequest) {
                 webhook_payload.entry[0].changes[0].value.from.id
               );
 
-              const entryId = webhook_payload.entry[0].id;
-              const commentId = webhook_payload.entry[0].changes[0].value.id;
-              const prompt = automation.listener?.prompt;
-              const token = automation.User?.integrations[0].token!;
-              const automationId = automation.id;
-
-              // Delay sending the message by 60 seconds
-              await new Promise((resolve) => setTimeout(resolve, 60000));
               const direct_message = await sendPrivateMessage(
-                entryId,
-                commentId,
-                prompt,
-                token
+                webhook_payload.entry[0].id,
+                webhook_payload.entry[0].changes[0].value.id,
+                automation.listener?.prompt,
+                automation.User?.integrations[0].token!
               );
 
+              console.log("DM SENT", direct_message.data);
               if (direct_message.status === 200) {
-                await trackResponses(automationId, "COMMENT");
+                const tracked = await trackResponses(automation.id, "COMMENT");
+
+                if (tracked) {
+                  return NextResponse.json(
+                    {
+                      message: "Message sent",
+                    },
+                    { status: 200 }
+                  );
+                }
               }
-              return NextResponse.json(
-                {
-                  message: "Message sent",
-                },
-                { status: 200 }
-              );
             }
             if (
               automation.listener.listener === "SMARTAI" &&
               automation.User?.subscription?.plan === "PRO"
             ) {
-              const userText =
-                webhook_payload.entry[0]?.changes?.[0]?.value?.text ?? "";
-              const prompt = automation.listener?.prompt ?? "";
               const smart_ai_message = await openai.chat.completions.create({
                 model: "gpt-4o",
                 messages: [
                   {
-                    role: "system",
-                    content: `${prompt}. Keep responses under 2 sentences.`,
+                    role: "assistant",
+                    content: `${automation.listener?.prompt}: keep responses under 2 sentences`,
                   },
-                  { role: "user", content: userText },
                 ],
               });
-              const content = smart_ai_message.choices?.[0]?.message?.content;
-              if (content) {
-                const entryId = webhook_payload.entry[0].id;
-                const commentId = webhook_payload.entry[0].changes[0].value.id;
-                const automationId = automation.id;
-                const token = automation.User?.integrations[0].token!;
-                const fromId =
-                  webhook_payload.entry[0].changes[0].value.from.id;
-
-                // Delay sending the message by 60 seconds
-                await new Promise((resolve) => setTimeout(resolve, 60000));
-
+              if (smart_ai_message.choices[0].message.content) {
                 const reciever = createChatHistory(
-                  automationId,
-                  entryId,
-                  fromId,
-                  userText
+                  automation.id,
+                  webhook_payload.entry[0].id,
+                  webhook_payload.entry[0].changes[0].value.from.id,
+                  webhook_payload.entry[0].changes[0].value.text
                 );
 
                 const sender = createChatHistory(
-                  automationId,
-                  entryId,
-                  fromId,
-                  content
+                  automation.id,
+                  webhook_payload.entry[0].id,
+                  webhook_payload.entry[0].changes[0].value.from.id,
+                  smart_ai_message.choices[0].message.content
                 );
 
                 await client.$transaction([reciever, sender]);
 
                 const direct_message = await sendPrivateMessage(
-                  entryId,
-                  commentId,
-                  content,
-                  token
+                  webhook_payload.entry[0].id,
+                  webhook_payload.entry[0].changes[0].value.id,
+                  automation.listener?.prompt,
+                  automation.User?.integrations[0].token!
                 );
 
                 if (direct_message.status === 200) {
-                  await trackResponses(automationId, "COMMENT");
+                  const tracked = await trackResponses(
+                    automation.id,
+                    "COMMENT"
+                  );
+
+                  if (tracked) {
+                    return NextResponse.json(
+                      {
+                        message: "Message sent",
+                      },
+                      { status: 200 }
+                    );
+                  }
                 }
-                return NextResponse.json(
-                  {
-                    message: "Message sent",
-                  },
-                  { status: 200 }
-                );
               }
             }
           }
@@ -354,8 +255,8 @@ export async function POST(req: NextRequest) {
             model: "gpt-4o",
             messages: [
               {
-                role: "system",
-                content: `${automation.listener?.prompt}. Keep responses under 2 sentences.`,
+                role: "assistant",
+                content: `${automation.listener?.prompt}: keep responses under 2 sentences`,
               },
               ...customer_history.history,
               {
@@ -365,49 +266,38 @@ export async function POST(req: NextRequest) {
             ],
           });
 
-          const content = smart_ai_message.choices?.[0]?.message?.content;
-          if (content) {
-            const entryId = webhook_payload.entry[0].id;
-            const senderId = webhook_payload.entry[0].messaging[0].sender.id;
-            const automationId = automation.id;
-            const token = automation.User?.integrations[0].token!;
-            const userMessage =
-              webhook_payload.entry[0].messaging[0].message.text;
-
-            // Delay sending the message by 60 seconds
-            await new Promise((resolve) => setTimeout(resolve, 60000));
-
+          if (smart_ai_message.choices[0].message.content) {
             const reciever = createChatHistory(
-              automationId,
-              entryId,
-              senderId,
-              userMessage
+              automation.id,
+              webhook_payload.entry[0].id,
+              webhook_payload.entry[0].messaging[0].sender.id,
+              webhook_payload.entry[0].messaging[0].message.text
             );
 
             const sender = createChatHistory(
-              automationId,
-              entryId,
-              senderId,
-              content
+              automation.id,
+              webhook_payload.entry[0].id,
+              webhook_payload.entry[0].messaging[0].sender.id,
+              smart_ai_message.choices[0].message.content
             );
             await client.$transaction([reciever, sender]);
             const direct_message = await sendDM(
-              entryId,
-              senderId,
-              content,
-              token
+              webhook_payload.entry[0].id,
+              webhook_payload.entry[0].messaging[0].sender.id,
+              smart_ai_message.choices[0].message.content,
+              automation.User?.integrations[0].token!
             );
 
             if (direct_message.status === 200) {
-              // tracked inside delayed block if needed
-              await trackResponses(automationId, "DM");
+              //if successfully send we return
+
+              return NextResponse.json(
+                {
+                  message: "Message sent",
+                },
+                { status: 200 }
+              );
             }
-            return NextResponse.json(
-              {
-                message: "Message sent",
-              },
-              { status: 200 }
-            );
           }
         }
       }
@@ -426,7 +316,11 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("IG webhook error:", error);
-    return NextResponse.json({ message: "Internal error" }, { status: 500 });
+    return NextResponse.json(
+      {
+        message: "No automation set",
+      },
+      { status: 200 }
+    );
   }
 }
